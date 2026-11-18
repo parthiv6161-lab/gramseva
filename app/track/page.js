@@ -84,7 +84,7 @@ export default function TrackComplaint() {
         <div className="grid gap-5 px-5 py-6 sm:grid-cols-2 sm:px-8">
           <div><p className="text-[10px] font-bold tracking-[.12em] text-[#8a958d]">CATEGORY</p><p className="mt-1.5 text-sm font-semibold text-[#244436]">{complaint.category || '—'}</p></div>
           <div><p className="text-[10px] font-bold tracking-[.12em] text-[#8a958d]">VILLAGE</p><p className="mt-1.5 text-sm font-semibold text-[#244436]">{complaint.village || '—'}</p></div>
-          <div><p className="text-[10px] font-bold tracking-[.12em] text-[#8a958d]">LOCATION</p><p className="mt-1.5 text-sm font-semibold text-[#244436]">{complaint.location || '—'}</p></div>
+          <div><p className="text-[10px] font-bold tracking-[.12em] text-[#8a958d]">LOCATION</p><p className="mt-1.5 text-sm font-semibold text-[#244436]">{complaint.location ? <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(complaint.location)}`} target="_blank" rel="noopener noreferrer" className="underline decoration-[#b9d8bd] underline-offset-2 transition hover:text-[#34734e]">{complaint.location}</a> : '—'}</p></div>
           <div><p className="text-[10px] font-bold tracking-[.12em] text-[#8a958d]">COMPLAINT DATE</p><p className="mt-1.5 text-sm font-semibold text-[#244436]">{formatDate(complaint.createdDate)}</p></div>
         </div>
         <div className="border-t border-[#eef0ea] px-5 py-6 sm:px-8">
