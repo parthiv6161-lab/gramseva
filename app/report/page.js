@@ -1,7 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+const LocationMapModal = dynamic(() => import('./LocationMapModal'), { ssr: false });
 
 const categories = ['Road', 'Water', 'Electricity', 'Waste Management', 'Drainage', 'Other'];
 
@@ -19,10 +22,21 @@ export default function ReportIssue() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [mapOpen, setMapOpen] = useState(false);
+  const [locationSuccess, setLocationSuccess] = useState('');
+  const [selectedCoords, setSelectedCoords] = useState(null);
 
   function update(e) {
     const { name, value } = e.target;
+    if (name === 'location') setLocationSuccess('');
     setForm(current => ({ ...current, [name]: name === 'phone' ? value.replace(/\D/g, '').slice(0, 10) : value }));
+  }
+
+  function handleConfirmLocation({ latitude, longitude, address }) {
+    setSelectedCoords({ lat: latitude, lng: longitude });
+    if (address) setForm(current => ({ ...current, location: address }));
+    setLocationSuccess('Location selected successfully.');
+    setMapOpen(false);
   }
 
   async function submit(e) {
@@ -44,6 +58,8 @@ export default function ReportIssue() {
       if (!complaintId) throw new Error(data.message || 'The service did not return a Complaint ID. Please try again.');
       setResult(String(complaintId));
       setForm(emptyForm);
+      setSelectedCoords(null);
+      setLocationSuccess('');
     } catch (err) {
       setError(err instanceof TypeError ? 'Unable to connect to the complaint service. Check your connection and try again.' : err.message || 'Something went wrong. Please try again.');
     } finally { setLoading(false); }
@@ -67,7 +83,7 @@ export default function ReportIssue() {
           <div className="mb-5 inline-flex items-center gap-2 text-[11px] font-bold tracking-[.15em] text-[#6e9873]"><span className="h-px w-6 bg-[#6e9873]"></span>LET’S GET STARTED</div>
           <h1 className="serif text-[39px] leading-tight tracking-[-.03em] text-[#1b3c30] sm:text-[48px]">Every little change<br/>begins with <span className="italic text-[#5c9269]">a voice.</span></h1>
           <p className="mt-5 max-w-sm text-sm leading-6 text-[#728077]">Tell us a little about yourself and the issue you’ve noticed. Your information helps us understand what your community needs.</p>
-          <div className="mt-9 flex items-center gap-3 rounded-2xl border border-[#e4e9df] bg-white/70 p-4"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eaf1e6] text-[#588361]">♧</span><p className="text-xs leading-5 text-[#6f7d73]">Your details are used to help identify and understand your complaint.</p></div>
+          <div className="mt-9 flex items-center gap-3 rounded-2xl border border-[#e4e9df] bg-white/70 p-4"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#eaf1e6] text-[#588361]">✓</span><p className="text-xs leading-5 text-[#6f7d73]">Your details are used to help identify and understand your complaint.</p></div>
         </div>
 
         <div className="rounded-[26px] border border-[#e9eae4] bg-white p-5 shadow-[0_16px_60px_rgba(38,66,49,.06)] sm:p-8">
@@ -77,7 +93,7 @@ export default function ReportIssue() {
           <form onSubmit={submit} noValidate className="space-y-5">
             <div className="grid gap-5 sm:grid-cols-2"><div><FieldLabel htmlFor="name">Full name</FieldLabel><input className="field" id="name" name="name" value={form.name} onChange={update} placeholder="e.g. Ananya Sharma" required autoComplete="name" maxLength={100}/></div><div><FieldLabel htmlFor="phone">Mobile number</FieldLabel><div className="phone-field flex overflow-hidden rounded-xl border border-[#dce4dc] focus-within:border-[#3c865d] focus-within:ring-2 focus-within:ring-[#3c865d]/15"><span className="flex items-center border-r border-[#e7ece6] bg-[#fafbf9] px-3 text-sm text-[#829087]">+91</span><input className="min-w-0 flex-1 border-0 px-3 py-3 text-sm outline-none placeholder:text-[#a0aaa2]" id="phone" name="phone" type="tel" value={form.phone} onChange={update} placeholder="10-digit mobile number" required inputMode="numeric" autoComplete="tel-national" maxLength={10} title="Enter a valid 10-digit Indian mobile number"/></div></div></div>
             <div className="grid gap-5 sm:grid-cols-2"><div><FieldLabel htmlFor="village">Village name</FieldLabel><input className="field" id="village" name="village" value={form.village} onChange={update} placeholder="Your village" required maxLength={100}/></div><div><FieldLabel htmlFor="category">Complaint category</FieldLabel><select className="field" id="category" name="category" value={form.category} onChange={update} required><option value="" disabled>Select a category</option>{categories.map(c => <option key={c}>{c}</option>)}</select></div></div>
-            <div><FieldLabel htmlFor="location">Exact location</FieldLabel><input className="field" id="location" name="location" value={form.location} onChange={update} placeholder="Landmark, street, or nearby place" required maxLength={200}/><p className="mt-1.5 text-[11px] text-[#929c94]">A nearby landmark helps us locate the issue.</p></div>
+            <div><FieldLabel htmlFor="location">Exact location</FieldLabel><input className="field" id="location" name="location" value={form.location} onChange={update} placeholder="Landmark, street, or nearby place" required maxLength={200}/><button type="button" onClick={() => setMapOpen(true)} className="mt-2 inline-flex items-center justify-center rounded-full border border-[#dce4dc] bg-white px-4 py-2 text-xs font-semibold text-[#45614e] transition hover:bg-[#f1f5ed]">Choose Location on Map</button>{locationSuccess && <p role="status" className="mt-2 text-[11px] text-[#367148]">{locationSuccess}</p>}<p className="mt-1.5 text-[11px] text-[#929c94]">A nearby landmark helps us locate the issue.</p></div>
             <div><FieldLabel htmlFor="description">Complaint description</FieldLabel><textarea className="field min-h-[125px] resize-y" id="description" name="description" value={form.description} onChange={update} placeholder="Please describe the issue and how it affects your community…" required minLength={10} maxLength={2000}/><div className="mt-1 flex justify-between text-[11px] text-[#929c94]"><span>Please include the details that will help us understand.</span><span>{form.description.length}/2000</span></div></div>
             <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#285f43] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#1d4d35] disabled:cursor-wait disabled:opacity-65">{loading ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"/>Submitting complaint…</> : <>Submit complaint <span className="text-lg">→</span></>}</button>
             <p className="text-center text-[11px] text-[#929c94]">By submitting, you confirm that the information provided is accurate.</p>
@@ -86,7 +102,8 @@ export default function ReportIssue() {
       </div>
     </section>
 
-    <section className="bg-[#244b38] px-5 py-12 text-center text-white sm:px-8"><p className="serif text-2xl italic">“A community grows stronger when every voice counts.”</p><p className="mt-3 text-[11px] tracking-[.12em] text-[#c4d5c6]">GRAMASEVA · TOGETHER FOR OUR VILLAGES</p></section>
-    <footer className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 py-6 text-[11px] text-[#8b968e] sm:flex-row sm:px-8 lg:px-12"><Link href="/" className="flex items-center gap-2"><Mark small/><span className="font-bold tracking-[.12em] text-[#45614e]">GRAMASEVA</span></Link><p>Made with care for stronger rural communities.</p><Link href="/report" className="transition hover:text-[#34734e]">Register a complaint ↑</Link></footer>
+    <section className="bg-[#244b38] px-5 py-12 text-center text-white sm:px-8"><p className="serif text-2xl italic">“A community grows stronger when every voice counts.”</p><p className="mt-3 text-[11px] tracking-[.12em] text-[#c4d5c6]">GRAMASEVA • TOGETHER FOR OUR VILLAGES</p></section>
+    <footer className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 py-6 text-[11px] text-[#8b968e] sm:flex-row sm:px-8 lg:px-12"><Link href="/" className="flex items-center gap-2"><Mark small/><span className="font-bold tracking-[.12em] text-[#45614e]">GRAMASEVA</span></Link><p>Made with care for stronger rural communities.</p><Link href="/report" className="transition hover:text-[#34734e]">Register a complaint ↗</Link></footer>
+    <LocationMapModal open={mapOpen} onClose={() => setMapOpen(false)} onConfirm={handleConfirmLocation} initialCoords={selectedCoords} />
   </main>;
 }
