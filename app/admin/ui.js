@@ -18,6 +18,9 @@ function normalized(row) {
     status: String(row.status || 'Pending'),
     date: String(row.createdDate ?? ''),
     solution: String(row.solution ?? ''),
+    latitude: String(row.latitude ?? ''),
+    longitude: String(row.longitude ?? ''),
+    photoUrl: String(row.photoUrl ?? ''),
   };
 }
 
@@ -25,6 +28,10 @@ function dateLabel(value) {
   if (!value) return '—';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function safePhotoUrl(value) {
+  return String(value || '').trim();
 }
 
 function StatusBadge({ status }) {
@@ -37,6 +44,17 @@ function ComplaintDetails({ complaint, close, saved }) {
   const [solution, setSolution] = useState(complaint.solution);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const hasPhoto = Boolean(safePhotoUrl(complaint.photoUrl));
+  const photoSrc = hasPhoto ? `/api/admin/complaints/photo?complaintId=${encodeURIComponent(complaint.id)}` : '';
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKeyDown = event => { if (event.key === 'Escape') setLightboxOpen(false); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [lightboxOpen]);
 
   async function save() {
     if (saving) return;
@@ -53,7 +71,7 @@ function ComplaintDetails({ complaint, close, saved }) {
       if (!response.ok) throw new Error(data.error || 'Unable to save changes.');
       if (data.success !== true) throw new Error(data.error || data.message || 'The admin service did not confirm the update.');
       await saved({ ...complaint, status, solution });
-    } catch (err) { setError(err.message || 'Unable to save changes.'); }
+    } catch (err) { console.error('[GRAMASEVA] Admin update failed:', err); setError(err.message || 'Unable to save changes.'); }
     finally { setSaving(false); }
   }
   
@@ -64,6 +82,7 @@ function ComplaintDetails({ complaint, close, saved }) {
       <div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-bold tracking-[.15em] text-[#6e9873]">COMPLAINT DETAILS</p><h2 id="details-title" className="serif mt-1 text-3xl text-[#1b3c30]">{complaint.id}</h2></div><button onClick={close} aria-label="Close details" className="grid h-9 w-9 place-items-center rounded-full bg-white text-xl text-[#66776b] hover:bg-[#eaf1e6]">×</button></div>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">{details.map(([label, value]) => <div key={label} className="rounded-xl border border-[#e7eae3] bg-white p-3.5"><p className="text-[10px] font-semibold uppercase tracking-wide text-[#879189]">{label}</p><p className="mt-1 break-words text-sm font-medium text-[#334b41]">{label === 'Location' && value ? <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}`} target="_blank" rel="noopener noreferrer" className="underline decoration-[#b9d8bd] underline-offset-2 transition hover:text-[#34734e]">{value}</a> : (value || '—')}</p></div>)}</div>
       <div className="mt-4 rounded-xl border border-[#e7eae3] bg-white p-4"><p className="text-[10px] font-semibold uppercase tracking-wide text-[#879189]">Description</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-[#40574a]">{complaint.description || 'No description provided.'}</p></div>
+      <div className="mt-4 rounded-xl border border-[#e7eae3] bg-white p-4"><p className="text-[10px] font-semibold uppercase tracking-wide text-[#879189]">Complaint Photo</p>{hasPhoto && !photoFailed ? <><button type="button" onClick={() => setLightboxOpen(true)} aria-label="View complaint photo in a larger size" className="mt-2 block w-full overflow-hidden rounded-xl border border-[#e7eae3] bg-[#f7f8f4] p-2"><img src={photoSrc} alt="Complaint photo" onError={() => { console.error('[GRAMASEVA] Complaint photo preview failed', complaint.id); setPhotoFailed(true); }} className="mx-auto max-h-64 w-full object-contain"/></button><p className="mt-1.5 text-[11px] text-[#929c94]">Click the photo to view it larger.</p></> : <p className="mt-2 text-sm text-[#879189]">{hasPhoto ? 'Photo is unavailable (it may have been deleted).' : 'No photo uploaded'}</p>}</div>
       <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_1.5fr]"><div><label htmlFor="complaint-status" className="mb-2 block text-[13px] font-semibold text-[#334b41]">Complaint status</label>
       <select id="complaint-status" value={status} onChange={event => setStatus(event.target.value)} className="field">{statuses.map(item => <option key={item}>{item}</option>)}</select></div><div><label htmlFor="complaint-solution" className="mb-2 block text-[13px] font-semibold text-[#334b41]">Solution / action taken</label><textarea id="complaint-solution" value={solution} onChange={event => setSolution(event.target.value)} maxLength={4000} rows={4} className="field resize-y" placeholder="Describe the action taken or next steps…"/></div></div>
       {error && <p role="alert" className="mt-4 rounded-xl border border-[#f0d1c8] bg-[#fff6f3] px-4 py-3 text-sm text-[#a54836]">{error}</p>}
@@ -75,6 +94,7 @@ function ComplaintDetails({ complaint, close, saved }) {
   {saving ? 'Saving…' : 'Save solution and status'}
 </button></div>
     </section>
+    {lightboxOpen && <div role="dialog" aria-modal="true" aria-label="Complaint photo enlarged" className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0d1f17]/85 p-4" onMouseDown={event => { if (event.target === event.currentTarget) setLightboxOpen(false); }}><button type="button" onClick={() => setLightboxOpen(false)} aria-label="Close enlarged photo" className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-xl text-[#334b41] hover:bg-white">×</button><img src={photoSrc} alt="Complaint photo enlarged" onError={() => { console.error('[GRAMASEVA] Enlarged complaint photo failed', complaint.id); setPhotoFailed(true); setLightboxOpen(false); }} className="max-h-[90vh] max-w-full rounded-xl object-contain"/></div>}
   </div>;
 }
 
@@ -117,7 +137,7 @@ export default function AdminDashboard() {
       if (!response.ok) throw new Error(data.error || 'Unable to load complaints.');
       if (data.success !== true || !Array.isArray(data.complaints)) throw new Error('The complaints API returned an unexpected response. Expected success:true and a complaints array.');
       setComplaints(data.complaints.map(normalized));
-    } catch (err) { setError(err.message || 'Unable to load complaints.'); }
+    } catch (err) { console.error('[GRAMASEVA] Admin dashboard load failed:', err); setError(err.message || 'Unable to load complaints.'); }
     finally { setLoading(false); }
   }, []);
 
