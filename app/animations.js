@@ -12,6 +12,7 @@ export default function SiteAnimations() {
   const router = useRouter();
   const navigating = useRef(false);
   const leaveTimer = useRef(null);
+  const scanFrame = useRef(0);
 
   useEffect(() => {
     navigating.current = false;
@@ -60,12 +61,25 @@ export default function SiteAnimations() {
     }
 
     scan();
-    const mutations = new MutationObserver(scan);
+
+    function scheduleScan() {
+      if (scanFrame.current) return;
+      scanFrame.current = window.requestAnimationFrame(() => {
+        scanFrame.current = 0;
+        scan();
+      });
+    }
+
+    const mutations = new MutationObserver(scheduleScan);
     mutations.observe(main, { childList: true, subtree: true });
 
     return () => {
       observer.disconnect();
       mutations.disconnect();
+      if (scanFrame.current) {
+        window.cancelAnimationFrame(scanFrame.current);
+        scanFrame.current = 0;
+      }
     };
   }, [pathname]);
 

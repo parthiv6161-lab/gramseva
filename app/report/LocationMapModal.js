@@ -1,6 +1,8 @@
 ﻿'use client';
 
+import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '../language-provider';
 
 async function reverseGeocode(lat, lng) {
   try {
@@ -15,6 +17,7 @@ async function reverseGeocode(lat, lng) {
 }
 
 export default function LocationMapModal({ open, onClose, onConfirm, initialCoords }) {
+  const { t } = useLanguage();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -118,7 +121,7 @@ export default function LocationMapModal({ open, onClose, onConfirm, initialCoor
   function useCurrentLocation() {
     setGpsError('');
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setGpsError('Geolocation is not supported by your browser. Please select a location on the map.');
+      setGpsError('map.gpsUnsupported');
       return;
     }
     setGpsLoading(true);
@@ -129,10 +132,10 @@ export default function LocationMapModal({ open, onClose, onConfirm, initialCoor
       },
       (err) => {
         setGpsLoading(false);
-        if (err && err.code === 1) setGpsError('Location permission was denied. Please allow location access or select a location on the map.');
-        else if (err && err.code === 2) setGpsError('Your location is unavailable right now. Please try again or select a location on the map.');
-        else if (err && err.code === 3) setGpsError('Location request timed out. Please try again or select a location on the map.');
-        else setGpsError('Unable to detect your current location. Please select a location on the map.');
+        if (err && err.code === 1) setGpsError('map.gpsDenied');
+        else if (err && err.code === 2) setGpsError('map.gpsUnavailable');
+        else if (err && err.code === 3) setGpsError('map.gpsTimeout');
+        else setGpsError('map.gpsGeneric');
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
@@ -150,10 +153,10 @@ export default function LocationMapModal({ open, onClose, onConfirm, initialCoor
       <section role="dialog" aria-modal="true" aria-labelledby="map-title" className="max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-t-[26px] bg-[#faf9f6] p-5 shadow-2xl sm:rounded-[26px] sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold tracking-[.15em] text-[#6e9873]">CHOOSE LOCATION</p>
-            <h2 id="map-title" className="serif mt-1 text-2xl text-[#1b3c30]">Select issue location</h2>
+            <p className="text-[10px] font-bold tracking-[.15em] text-[#6e9873]">{t('map.eyebrow')}</p>
+            <h2 id="map-title" className="serif mt-1 text-2xl text-[#1b3c30]">{t('map.title')}</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close map" className="grid h-9 w-9 place-items-center rounded-full bg-white text-xl text-[#66776b] hover:bg-[#eaf1e6]">&times;</button>
+          <button type="button" onClick={onClose} aria-label={t('map.close')} className="grid h-9 w-9 place-items-center rounded-full bg-white text-xl text-[#66776b] hover:bg-[#eaf1e6]">&times;</button>
         </div>
 
         <div className="mt-4">
@@ -163,26 +166,26 @@ export default function LocationMapModal({ open, onClose, onConfirm, initialCoor
 
           <div className="mt-4">
             <button type="button" onClick={useCurrentLocation} disabled={gpsLoading} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#285f43] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1d4d35] disabled:cursor-wait disabled:opacity-65 sm:w-auto">
-              {gpsLoading ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />Detecting current location…</> : 'Use My Current Location'}
+              {gpsLoading ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />{t('map.detecting')}</> : t('map.useCurrent')}
             </button>
-            {gpsError && <p role="alert" className="mt-2 rounded-xl border border-[#f0d1c8] bg-[#fff6f3] px-3 py-2 text-xs text-[#a54836]">{gpsError}</p>}
+            {gpsError && <p role="alert" className="mt-2 rounded-xl border border-[#f0d1c8] bg-[#fff6f3] px-3 py-2 text-xs text-[#a54836]">{t(gpsError)}</p>}
           </div>
 
           <div className="mt-4 rounded-xl border border-[#e7eae3] bg-white p-3.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#879189]">Detected address</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#879189]">{t('map.address')}</p>
             <p className="mt-1.5 min-h-[1.25rem] text-sm leading-6 text-[#334b41]">
-              {addrLoading ? 'Detecting address…' : (address || (coords ? 'Address could not be detected. You can confirm the coordinates and enter a landmark manually.' : 'Tap the map or use your current location to place the marker.'))}
+              {addrLoading ? t('map.addressLoading') : (address || (coords ? t('map.addressFailed') : t('map.addressHint')))}
             </p>
           </div>
 
           <div className="mt-3 rounded-xl border border-[#e7eae3] bg-white p-3.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#879189]">Latitude and Longitude</p>
-            <p className="mt-1.5 font-mono text-sm text-[#334b41]">{coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : 'Not selected'}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#879189]">{t('map.coords')}</p>
+            <p className="mt-1.5 font-mono text-sm text-[#334b41]">{coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : t('map.notSelected')}</p>
           </div>
 
           <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button type="button" onClick={onClose} className="rounded-full border border-[#dce4dc] bg-white px-5 py-3 text-sm font-semibold text-[#45614e] transition hover:bg-[#f1f5ed]">Cancel</button>
-            <button type="button" onClick={confirm} disabled={!coords} className="rounded-full bg-[#285f43] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#1d4d35] disabled:cursor-not-allowed disabled:opacity-50">Confirm Location</button>
+            <button type="button" onClick={onClose} className="rounded-full border border-[#dce4dc] bg-white px-5 py-3 text-sm font-semibold text-[#45614e] transition hover:bg-[#f1f5ed]">{t('map.cancel')}</button>
+            <button type="button" onClick={confirm} disabled={!coords} className="rounded-full bg-[#285f43] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#1d4d35] disabled:cursor-not-allowed disabled:opacity-50">{t('map.confirm')}</button>
           </div>
         </div>
       </section>

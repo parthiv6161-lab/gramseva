@@ -1,16 +1,14 @@
-﻿@import "leaflet/dist/leaflet.css";
-
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; --ease-out-soft: cubic-bezier(.22,.61,.36,1); }
+:root { color-scheme: light; --ease-out-soft: cubic-bezier(.22,.61,.36,1); --font-en-sans: Arial, Helvetica, sans-serif; --font-en-serif: Georgia, 'Times New Roman', serif; }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: #faf9f6; color: #17352d; font-family: Arial, Helvetica, sans-serif; }
+body { margin: 0; background: #faf9f6; color: #17352d; font-family: var(--font-en-sans); }
 button, input, select, textarea { font: inherit; }
 ::selection { background: #cde8d4; color: #17352d; }
-.serif { font-family: Georgia, 'Times New Roman', serif; }
+.serif { font-family: var(--font-en-serif); }
 .field { width: 100%; border: 1px solid #dce4dc; border-radius: 12px; padding: 13px 14px; color: #18382f; background: #fff; outline: none; transition: border-color .3s var(--ease-out-soft), box-shadow .3s var(--ease-out-soft), background-color .3s var(--ease-out-soft); }
 .field:focus { border-color: #3c865d; box-shadow: 0 0 0 3px rgba(60,134,93,.13); }
 .field::placeholder { color: #a0aaa2; }
@@ -79,4 +77,75 @@ button, input, select, textarea { font: inherit; }
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+html[lang="ml"] {
+  font-family: var(--font-manjari), var(--font-manjari-bold), sans-serif;
+}
+
+html[lang="ml"] body,
+html[lang="ml"] button,
+html[lang="ml"] input,
+html[lang="ml"] select,
+html[lang="ml"] textarea {
+  font-family: var(--font-manjari), var(--font-manjari-bold), sans-serif;
+  font-kerning: normal;
+  letter-spacing: 0;
+  line-height: 1.7;
+}
+
+html[lang="ml"] p,
+html[lang="ml"] li {
+  letter-spacing: 0;
+  line-height: 1.75;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+html[lang="ml"] p { margin-top: 0; }
+html[lang="ml"] p + p { margin-top: .9rem; }
+html[lang="ml"] h1 + p,
+html[lang="ml"] h2 + p,
+html[lang="ml"] .serif + p { margin-top: 1.1rem; }
+
+html[lang="ml"] h1,
+html[lang="ml"] h2,
+html[lang="ml"] h3,
+html[lang="ml"] h4,
+html[lang="ml"] h5,
+html[lang="ml"] h6,
+html[lang="ml"] .serif {
+  font-family: var(--font-manjari-bold), var(--font-manjari), sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+html[lang="ml"] h1 { line-height: 1.24; }
+html[lang="ml"] h2 { line-height: 1.32; }
+html[lang="ml"] h3 { line-height: 1.36; }
+
+html[lang="ml"] [class*="tracking-"] { letter-spacing: 0; }
+html[lang="ml"] .font-extrabold { letter-spacing: .08em; }
+
+html[lang="ml"] .field {
+  font-size: 15px;
+  line-height: 1.6;
+  padding: 14px 16px;
+}
+
+html[lang="ml"] label,
+html[lang="ml"] button { line-height: 1.5; }
+
+html[lang="ml"] nav a,
+html[lang="ml"] nav button {
+  min-height: 38px;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  html[lang="ml"] body { font-size: 15px; line-height: 1.7; }
+  html[lang="ml"] h1 { line-height: 1.28; }
+  html[lang="ml"] .field { font-size: 16px; }
 }
